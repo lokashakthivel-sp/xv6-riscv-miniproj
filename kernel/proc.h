@@ -101,4 +101,5 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  uint fd_read_logged;         // Bitmask: bit i set if first read on fd i was logged
 };

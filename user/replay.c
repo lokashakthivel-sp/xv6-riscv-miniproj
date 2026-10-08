@@ -40,6 +40,14 @@ print_event(struct replay_event *ev, const char *prefix)
     printf("%s[tick %d] " ANSI_RED "exited" ANSI_RESET " with status %d\n",
            prefix, ev->ticks, ev->arg1);
     break;
+  case REPLAY_EVENT_READ:
+    printf("%s[tick %d] " ANSI_CYAN "read" ANSI_RESET " fd=%d (%d bytes, first read)\n",
+           prefix, ev->ticks, ev->arg1, ev->arg2);
+    break;
+  case REPLAY_EVENT_WRITE:
+    printf("%s[tick %d] " ANSI_CYAN "write" ANSI_RESET " fd=%d (%d bytes, %d bits)\n",
+           prefix, ev->ticks, ev->arg1, ev->arg2, ev->arg2 * 8);
+    break;
   default:
     printf("%s[tick %d] event type=%d (arg1=%d, arg2=%d)\n",
            prefix, ev->ticks, ev->event_type, ev->arg1, ev->arg2);
@@ -55,7 +63,7 @@ cmd_list(int total)
   int num_pids = 0;
 
   printf(ANSI_BOLD "\nprocesses:\n" ANSI_RESET);
-  printf("pid\tname\t\tevents\tstatus\n");
+  printf("pid\tname\t\t\tevents\tstatus\n");
   printf("--------------------------------------------\n");
 
   for (int i = 0; i < total; i++) {
@@ -89,10 +97,10 @@ cmd_list(int total)
       }
 
       if (exited) {
-        printf("%d\t%s\t\t%d\t" ANSI_RED "exited (%d)" ANSI_RESET "\n",
+        printf("%d\t%s\t\t\t%d\t" ANSI_RED "exited (%d)" ANSI_RESET "\n",
                pid, name, count, exit_code);
       } else {
-        printf("%d\t%s\t\t%d\t" ANSI_GREEN "active" ANSI_RESET "\n",
+        printf("%d\t%s\t\t\t%d\t" ANSI_GREEN "active" ANSI_RESET "\n",
                pid, name, count);
       }
     }

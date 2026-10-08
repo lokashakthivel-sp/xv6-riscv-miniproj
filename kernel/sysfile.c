@@ -70,29 +70,45 @@ uint64
 sys_read(void)
 {
   struct file *f;
+  int fd;
   int n;
   uint64 p;
 
   argaddr(1, &p);
   argint(2, &n);
-  if (argfd(0, 0, &f) < 0)
+  if (argfd(0, &fd, &f) < 0)
     return -1;
-  return fileread(f, p, n);
+
+  int ret = fileread(f, p, n);
+  if (ret >= 0 && fd >= 0 && fd < NOFILE) {
+    struct proc *pr = myproc();
+    if (!(pr->fd_read_logged & (1 << fd))) {
+      pr->fd_read_logged |= (1 << fd);
+      replay_record(pr->pid, pr->name, REPLAY_EVENT_READ, fd, ret, "");
+    }
+  }
+  return ret;
 }
 
 uint64
 sys_write(void)
 {
   struct file *f;
+  int fd;
   int n;
   uint64 p;
 
   argaddr(1, &p);
   argint(2, &n);
-  if (argfd(0, 0, &f) < 0)
+  if (argfd(0, &fd, &f) < 0)
     return -1;
 
-  return filewrite(f, p, n);
+  int ret = filewrite(f, p, n);
+  // Log write only if greater than 64 bits (64 bits = 8 bytes)
+  if (ret > 0 && fd >= 0 && ret > 8) {
+    replay_record(myproc()->pid, myproc()->name, REPLAY_EVENT_WRITE, fd, ret, "");
+  }
+  return ret;
 }
 
 uint64
@@ -104,6 +120,8 @@ sys_close(void)
   if (argfd(0, &fd, &f) < 0)
     return -1;
   myproc()->ofile[fd] = 0;
+  if (fd >= 0 && fd < NOFILE)
+    myproc()->fd_read_logged &= ~(1 << fd);
   fileclose(f);
   replay_record(myproc()->pid, myproc()->name, REPLAY_EVENT_CLOSE, fd, 0, "");
   return 0;
@@ -392,6 +410,9 @@ sys_open(void)
 
   iunlock(ip);
   end_op();
+
+  if (fd >= 0 && fd < NOFILE)
+    myproc()->fd_read_logged &= ~(1 << fd);
 
   replay_record(myproc()->pid, myproc()->name, REPLAY_EVENT_OPEN, fd, omode, path);
 

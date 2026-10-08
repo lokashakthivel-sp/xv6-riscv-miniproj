@@ -20,16 +20,32 @@ main(void)
     int child_pid = getpid();
     printf("[testreplay:child %d] Child running, opening 'replay_test.txt'...\n", child_pid);
 
-    int fd = open("replay_test.txt", O_CREATE | O_WRONLY);
+    int fd = open("replay_test.txt", O_CREATE | O_RDWR);
     if (fd >= 0) {
-      write(fd, "Flight recorder test data\n", 26);
+      // 1. Small write: 20 bytes = 160 bits (<= 512 bits, should NOT be logged)
+      write(fd, "small write (160b)\n", 19);
+
+      // 2. Large write: 100 bytes = 800 bits (> 512 bits, SHOULD be logged)
+      char bigbuf[100];
+      for (int i = 0; i < 99; i++) bigbuf[i] = 'A';
+      bigbuf[99] = '\n';
+      write(fd, bigbuf, 100);
+
       close(fd);
-      printf("[testreplay:child %d] File written and closed.\n", child_pid);
-    } else {
-      printf("[testreplay:child %d] open failed!\n", child_pid);
     }
 
-    printf("[testreplay:child %d] Exiting with status 0.\n", child_pid);
+    // 3. Open for reading: test first read vs second read
+    fd = open("replay_test.txt", O_RDONLY);
+    if (fd >= 0) {
+      char buf[32];
+      // 1st read on fd: SHOULD be logged
+      read(fd, buf, sizeof(buf));
+      // 2nd read on fd: should NOT be logged
+      read(fd, buf, sizeof(buf));
+      close(fd);
+    }
+
+    printf("[testreplay:child %d] Writes and reads completed. Exiting.\n", child_pid);
     exit(0);
   } else {
     // Parent process
@@ -38,10 +54,8 @@ main(void)
     wait(&status);
     printf("[testreplay:parent %d] Child reaped. Demo completed!\n\n", parent_pid);
     printf("Now try running:\n");
-    printf("  replay %d\n", parent_pid);
     printf("  replay %d\n", pid);
-    printf("  replay -t %d\n", parent_pid);
-    printf("  replay list\n\n");
+    printf("  replay -t %d\n\n", parent_pid);
     exit(0);
   }
 }
