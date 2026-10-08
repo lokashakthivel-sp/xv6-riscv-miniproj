@@ -60,6 +60,7 @@ void            ireclaim(int);
 void*           kalloc(void);
 void            kfree(void *);
 void            kinit(void);
+int             get_free_pages(void);
 
 // log.c
 void            initlog(int, struct superblock*);
@@ -181,6 +182,15 @@ void            plic_complete(int);
 void            virtio_disk_init(void);
 void            virtio_disk_rw(struct buf *, int);
 void            virtio_disk_intr(void);
+
+// bootanim.c
+void            boot_animate(int, int, int);
+
+// replay.c
+void            replay_init(void);
+void            replay_record(int, const char*, int, int, int, const char*);
+int             replay_get(int, uint64, int);
+uint64          sys_replaylog(void);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x) / sizeof((x)[0]))
