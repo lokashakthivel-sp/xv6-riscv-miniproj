@@ -15,6 +15,7 @@
 #include "sleeplock.h"
 #include "file.h"
 #include "fcntl.h"
+#include "replay.h"
 
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
@@ -104,6 +105,7 @@ sys_close(void)
     return -1;
   myproc()->ofile[fd] = 0;
   fileclose(f);
+  replay_record(myproc()->pid, myproc()->name, REPLAY_EVENT_CLOSE, fd, 0, "");
   return 0;
 }
 
@@ -390,6 +392,8 @@ sys_open(void)
 
   iunlock(ip);
   end_op();
+
+  replay_record(myproc()->pid, myproc()->name, REPLAY_EVENT_OPEN, fd, omode, path);
 
   return fd;
 }

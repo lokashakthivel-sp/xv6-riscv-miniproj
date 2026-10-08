@@ -5,6 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "replay.h"
 
 struct cpu cpus[NCPU];
 
@@ -301,6 +302,8 @@ kfork(void)
   np->state = RUNNABLE;
   release(&np->lock);
 
+  replay_record(p->pid, p->name, REPLAY_EVENT_FORK, pid, 0, np->name);
+
   return pid;
 }
 
@@ -352,6 +355,8 @@ kexit(int status)
   // Parent might be sleeping in wait().
   wakeup(p->parent);
 
+  replay_record(p->pid, p->name, REPLAY_EVENT_EXIT, status, 0, "");
+
   acquire(&p->lock);
 
   p->xstate = status;
@@ -394,10 +399,14 @@ kwait(uint64 addr)
             release(&wait_lock);
             return -1;
           }
+          int child_xstate = pp->xstate;
+          char child_name[16];
+          safestrcpy(child_name, pp->name, sizeof(child_name));
           pp->parent = 0;
           freeproc(pp);
           release(&pp->lock);
           release(&wait_lock);
+          replay_record(p->pid, p->name, REPLAY_EVENT_WAIT, pid, child_xstate, child_name);
           return pid;
         }
         release(&pp->lock);
