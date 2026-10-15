@@ -47,7 +47,7 @@ In operating systems and systems programming, a *flight recorder* (or execution 
 ```
 
 ### 2.1 The Event Structure (`struct replay_event`)
-Defined in [`kernel/replay.h`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/replay.h):
+Defined in [`kernel/replay.h`]:
 
 ```c
 struct replay_event {
@@ -74,7 +74,7 @@ struct replay_event {
 | `REPLAY_EVENT_WRITE` | 8 | `sys_write()` (> 8 bytes) | `fd` | Bytes written | `""` |
 
 ### 2.3 The Ring Buffer (`replay_log`)
-Defined in [`kernel/replay.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/replay.c):
+Defined in [`kernel/replay.c`]:
 - Holds up to `MAX_REPLAY_EVENTS` (512) items.
 - Managed by:
   - `head`: index pointing to where the next event will be written (`(head + 1) % 512`).
@@ -87,19 +87,19 @@ Defined in [`kernel/replay.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/repl
 ## 3. Comprehensive File-by-File Breakdown
 
 ### Summary of Changes
-- **New Files (4):** [`kernel/replay.h`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/replay.h), [`kernel/replay.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/replay.c), [`user/replay.c`](file:///d:/sem5/os/xv6-riscv-miniproj/user/replay.c), [`user/testreplay.c`](file:///d:/sem5/os/xv6-riscv-miniproj/user/testreplay.c).
-- **Modified Kernel Files (8):** [`kernel/defs.h`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/defs.h), [`kernel/main.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/main.c), [`kernel/proc.h`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/proc.h), [`kernel/proc.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/proc.c), [`kernel/exec.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/exec.c), [`kernel/sysfile.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/sysfile.c), [`kernel/syscall.h`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/syscall.h), [`kernel/syscall.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/syscall.c).
-- **Modified User/Build Files (3):** [`user/user.h`](file:///d:/sem5/os/xv6-riscv-miniproj/user/user.h), [`user/usys.pl`](file:///d:/sem5/os/xv6-riscv-miniproj/user/usys.pl), [`Makefile`](file:///d:/sem5/os/xv6-riscv-miniproj/Makefile).
+- **New Files (4):** [`kernel/replay.h`], [`kernel/replay.c`], [`user/replay.c`], [`user/testreplay.c`].
+- **Modified Kernel Files (8):** [`kernel/defs.h`], [`kernel/main.c`], [`kernel/proc.h`], [`kernel/proc.c`], [`kernel/exec.c`], [`kernel/sysfile.c`], [`kernel/syscall.h`], [`kernel/syscall.c`].
+- **Modified User/Build Files (3):** [`user/user.h`], [`user/usys.pl`], [`Makefile`].
 
 ---
 
 ### Detailed File Explanations
 
-#### 1. [`kernel/replay.h`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/replay.h) `[ADDED]`
+#### 1. [`kernel/replay.h`] `[ADDED]`
 - **Purpose:** Defines public constants and data contracts for the replay subsystem.
 - **Why Added:** Both kernel and user-space programs need the exact definition of `struct replay_event`, event codes (`REPLAY_EVENT_*`), and buffer size limit (`MAX_REPLAY_EVENTS`).
 
-#### 2. [`kernel/replay.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/replay.c) `[ADDED]`
+#### 2. [`kernel/replay.c`] `[ADDED]`
 - **Purpose:** Implements the core flight recorder logic and the system call handler.
 - **Key Functions:**
   - `replay_init()`: Initializes the spinlock and resets head/total counters.
@@ -107,7 +107,7 @@ Defined in [`kernel/replay.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/repl
   - `replay_get(pid, dst_addr, max_events)`: Reads events chronologically. If `pid != -1`, it filters entries matching only that PID. Uses `copyout(p->pagetable, p->sz, ...)` to safely transfer data into the calling process's user memory.
   - `sys_replaylog()`: The syscall entry point. Uses `argint()` and `argaddr()` to read arguments from trapframe registers (`a0`, `a1`, `a2`) and dispatches to `replay_get()`.
 
-#### 3. [`kernel/defs.h`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/defs.h) `[MODIFIED]`
+#### 3. [`kernel/defs.h`] `[MODIFIED]`
 - **Modification:** Added declarations for replay functions:
   ```c
   void   replay_init(void);
@@ -117,7 +117,7 @@ Defined in [`kernel/replay.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/repl
   ```
 - **Why Modified:** In C, files calling `replay_record()` and `replay_init()` require visible function prototypes to compile cleanly without implicit declaration warnings/errors.
 
-#### 4. [`kernel/syscall.h`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/syscall.h) & [`kernel/syscall.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/syscall.c) `[MODIFIED]`
+#### 4. [`kernel/syscall.h`] & [`kernel/syscall.c`] `[MODIFIED]`
 - **Modification in `syscall.h`:** Assigned system call number:
   ```c
   #define SYS_replaylog 23
@@ -127,7 +127,7 @@ Defined in [`kernel/replay.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/repl
   - Registered `[SYS_replaylog] = sys_replaylog` in the `syscalls[]` dispatch array.
 - **Why Modified:** Enables the xv6 syscall dispatcher to map syscall ID 23 to `sys_replaylog()`.
 
-#### 5. [`kernel/main.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/main.c) `[MODIFIED]`
+#### 5. [`kernel/main.c`] `[MODIFIED]`
 - **Modification:** Added call to `replay_init()` during boot:
   ```c
   virtio_disk_init(); // emulated hard disk
@@ -136,14 +136,14 @@ Defined in [`kernel/replay.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/repl
   ```
 - **Why Modified:** The spinlock and ring buffer must be initialized on CPU 0 before any user processes or fork/exec operations occur.
 
-#### 6. [`kernel/proc.h`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/proc.h) `[MODIFIED]`
+#### 6. [`kernel/proc.h`] `[MODIFIED]`
 - **Modification:** Added field to `struct proc`:
   ```c
   uint fd_read_logged; // Bitmask: bit i set if first read on fd i was logged
   ```
 - **Why Modified:** Each process maintains open file descriptors (`ofile[NOFILE]`, where `NOFILE = 16`). Reading frequently (e.g., character by character or in blocks) would instantly flood the 512-entry log buffer. A 16-bit mask tracks per-FD read state.
 
-#### 7. [`kernel/proc.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/proc.c) `[MODIFIED]`
+#### 7. [`kernel/proc.c`] `[MODIFIED]`
 - **Modifications & Rationale:**
   - **`allocproc()` & `freeproc()`:** Reset `p->fd_read_logged = 0;` so new processes or recycled slots have a clean bitmask.
   - **`kfork()`:** Records `REPLAY_EVENT_FORK`:
@@ -162,14 +162,14 @@ Defined in [`kernel/replay.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/repl
     ```
     Records when a parent reaps a child, logging the reaped child's PID and its exit status.
 
-#### 8. [`kernel/exec.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/exec.c) `[MODIFIED]`
+#### 8. [`kernel/exec.c`] `[MODIFIED]`
 - **Modification in `kexec()`:**
   ```c
   replay_record(p->pid, p->name, REPLAY_EVENT_EXEC, argc, 0, path);
   ```
 - **Why Modified:** Records when a process replaces its address space with an executable, logging `argc` and the binary path (e.g. `/sh`, `/ls`).
 
-#### 9. [`kernel/sysfile.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/sysfile.c) `[MODIFIED]`
+#### 9. [`kernel/sysfile.c`] `[MODIFIED]`
 - **Modifications & Rationale:**
   - **`sys_open()`:**
     ```c
@@ -207,7 +207,7 @@ Defined in [`kernel/replay.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/repl
     ```
     Small writes (such as single newline characters or small terminal control sequences $\le 8$ bytes) do not overwhelm the buffer. Only substantive payloads ($> 8$ bytes / $> 64$ bits) are logged.
 
-#### 10. [`user/user.h`](file:///d:/sem5/os/xv6-riscv-miniproj/user/user.h) & [`user/usys.pl`](file:///d:/sem5/os/xv6-riscv-miniproj/user/usys.pl) `[MODIFIED]`
+#### 10. [`user/user.h`] & [`user/usys.pl`] `[MODIFIED]`
 - **`user.h`:** Added prototype: `int replaylog(int, void *, int);`.
 - **`usys.pl`:** Added `entry("replaylog");`, which generates the assembly shim:
   ```assembly
@@ -219,7 +219,7 @@ Defined in [`kernel/replay.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/repl
   ```
 - **Why Modified:** Allows any C program in user space to call `replaylog()` like standard POSIX-style functions.
 
-#### 11. [`user/replay.c`](file:///d:/sem5/os/xv6-riscv-miniproj/user/replay.c) `[ADDED]`
+#### 11. [`user/replay.c`] `[ADDED]`
 - **Purpose:** User-facing interactive command-line utility to analyze and display flight recorder data.
 - **Commands & Features:**
   - `replay list`: Scans all events, deduplicates PIDs, displays each process's event count, name, and final status (`active` or `exited (code)`).
@@ -228,7 +228,7 @@ Defined in [`kernel/replay.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/repl
   - `replay all`: Dumps every global event in raw chronological sequence.
 - **Visuals:** Uses ANSI escape sequences (Green for fork/active, Cyan for exec/open/read/write, Yellow for wait, Red for exit).
 
-#### 12. [`user/testreplay.c`](file:///d:/sem5/os/xv6-riscv-miniproj/user/testreplay.c) `[ADDED]`
+#### 12. [`user/testreplay.c`] `[ADDED]`
 - **Purpose:** Automated test and verification suite.
 - **Workflow:**
   1. Parent records its PID and forks a child.
@@ -239,7 +239,7 @@ Defined in [`kernel/replay.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/repl
   6. Parent waits for the child and exits.
   7. Instructs user on the exact `replay` commands to verify output.
 
-#### 13. [`Makefile`](file:///d:/sem5/os/xv6-riscv-miniproj/Makefile) `[MODIFIED]`
+#### 13. [`Makefile`] `[MODIFIED]`
 - **Modifications:**
   - Added `$K/replay.o` to `OBJS` to compile the kernel module into `kernel.bin`.
   - Added `$U/_replay` and `$U/_testreplay` to `UPROGS` to build the user binaries and bundle them into the file system image (`fs.img`).
@@ -292,18 +292,18 @@ User space resumes <---------------------------------------------+ sret
 
 | Category | File | Change | Primary Function / Reason |
 |---|---|---|---|
-| **Kernel Subsystem** | [`kernel/replay.h`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/replay.h) | Added | Declares event struct, event IDs (1-8), buffer limits |
-| **Kernel Subsystem** | [`kernel/replay.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/replay.c) | Added | Buffer storage, concurrency locks, recording, extraction, `copyout` |
-| **Kernel Header** | [`kernel/defs.h`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/defs.h) | Modified | Prototypes for `replay_init`, `replay_record`, `sys_replaylog` |
-| **Process State** | [`kernel/proc.h`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/proc.h) | Modified | Adds `fd_read_logged` bitmask to `struct proc` |
-| **Process Lifecycle** | [`kernel/proc.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/proc.c) | Modified | Hooks `fork`, `wait`, `exit` and initializes read mask |
-| **Binary Execution** | [`kernel/exec.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/exec.c) | Modified | Hooks `exec` to log program path and argument count |
-| **File I/O Hooks** | [`kernel/sysfile.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/sysfile.c) | Modified | Hooks `open`, `close`, first `read`, and writes $> 8$ bytes |
-| **Kernel Boot** | [`kernel/main.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/main.c) | Modified | Invokes `replay_init()` on CPU 0 before starting scheduler |
-| **Syscall Registry** | [`kernel/syscall.h`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/syscall.h) | Modified | Assigns syscall number `SYS_replaylog 23` |
-| **Syscall Dispatch** | [`kernel/syscall.c`](file:///d:/sem5/os/xv6-riscv-miniproj/kernel/syscall.c) | Modified | Connects syscall table entry to `sys_replaylog` handler |
-| **User API** | [`user/user.h`](file:///d:/sem5/os/xv6-riscv-miniproj/user/user.h) | Modified | User-level prototype for `replaylog(int, void *, int)` |
-| **Assembly Shim** | [`user/usys.pl`](file:///d:/sem5/os/xv6-riscv-miniproj/user/usys.pl) | Modified | Generates assembly stub with `ecall` |
-| **User CLI** | [`user/replay.c`](file:///d:/sem5/os/xv6-riscv-miniproj/user/replay.c) | Added | CLI tool with `list`, `<pid>`, `-t <pid>`, `all` modes |
-| **Test Program** | [`user/testreplay.c`](file:///d:/sem5/os/xv6-riscv-miniproj/user/testreplay.c) | Added | Demonstration and validation test for all logged events |
-| **Build System** | [`Makefile`](file:///d:/sem5/os/xv6-riscv-miniproj/Makefile) | Modified | Links `replay.o` into kernel and builds user tools in `UPROGS` |
+| **Kernel Subsystem** | [`kernel/replay.h`] | Added | Declares event struct, event IDs (1-8), buffer limits |
+| **Kernel Subsystem** | [`kernel/replay.c`] | Added | Buffer storage, concurrency locks, recording, extraction, `copyout` |
+| **Kernel Header** | [`kernel/defs.h`] | Modified | Prototypes for `replay_init`, `replay_record`, `sys_replaylog` |
+| **Process State** | [`kernel/proc.h`] | Modified | Adds `fd_read_logged` bitmask to `struct proc` |
+| **Process Lifecycle** | [`kernel/proc.c`] | Modified | Hooks `fork`, `wait`, `exit` and initializes read mask |
+| **Binary Execution** | [`kernel/exec.c`] | Modified | Hooks `exec` to log program path and argument count |
+| **File I/O Hooks** | [`kernel/sysfile.c`] | Modified | Hooks `open`, `close`, first `read`, and writes $> 8$ bytes |
+| **Kernel Boot** | [`kernel/main.c`] | Modified | Invokes `replay_init()` on CPU 0 before starting scheduler |
+| **Syscall Registry** | [`kernel/syscall.h`] | Modified | Assigns syscall number `SYS_replaylog 23` |
+| **Syscall Dispatch** | [`kernel/syscall.c`] | Modified | Connects syscall table entry to `sys_replaylog` handler |
+| **User API** | [`user/user.h`] | Modified | User-level prototype for `replaylog(int, void *, int)` |
+| **Assembly Shim** | [`user/usys.pl`] | Modified | Generates assembly stub with `ecall` |
+| **User CLI** | [`user/replay.c`] | Added | CLI tool with `list`, `<pid>`, `-t <pid>`, `all` modes |
+| **Test Program** | [`user/testreplay.c`] | Added | Demonstration and validation test for all logged events |
+| **Build System** | [`Makefile`] | Modified | Links `replay.o` into kernel and builds user tools in `UPROGS` |
